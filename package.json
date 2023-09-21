@@ -1,0 +1,40 @@
+{
+  "name": "linkedin-jobs-scrapper",
+  "version": "0.0.1",
+  "description": "Project setup and example for web scrapping Linkedin using Node and puppeteer",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "start:debug": "ts-node src/index.ts --headless false",
+    "clean-logs": "rimraf ./logs"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/geojson": "^7946.0.7",
+    "@types/mongoose": "^5.10.1",
+    "@types/puppeteer": "^2.0.1",
+    "@types/yargs": "^15.0.9",
+    "aws-sdk": "^2.912.0",
+    "axios": "^0.21.1",
+    "axios-cookiejar-support": "^1.0.1",
+    "chalk": "^4.1.0",
+    "mongoose": "^5.10.17",
+    "node-fetch": "^3.0.0",
+    "pm2": "^5.1.2",
+    "puppeteer": "^3.1.0",
+    "puppeteer-extra": "^3.3.4",
+    "puppeteer-extra-plugin-stealth": "^2.11.0",
+    "rimraf": "^3.0.2",
+    "rxjs": "^6.5.5",
+    "tough-cookie": "^4.0.0",
+    "ts-node": "^8.9.1",
+    "typescript": "^3.8.3",
+    "unirest": "~0.6.0",
+    "yargs": "^16.1.0"
+  },
+  "engines": {
+    "node" : ">=16.0.0"
+  }
+}

@@ -1,0 +1,29 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "outDir": "./dit/",
+        "target": "es5",
+        "sourceMap": true,
+        "strictNullChecks": true,
+        "resolveJsonModule": true,
+        "lib": [
+            "es2019",
+            "dom"
+        ],
+        "types": [
+            "node",
+            "puppeteer"
+        ],
+        "typeRoots": [
+            "node_modules/@types"
+        ]
+    },
+    "include": [
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        ".git",
+        "node_modules"
+    ]
+}
