@@ -31,12 +31,6 @@ const rootDirectory = path.resolve(__dirname, '..');
 // Make log directory if there isn't
 fs.mkdirSync(path.join(rootDirectory, jobsDataFolder), {recursive: true});
 
-
-const countriesAndTechnologies: { tech: string; location: string }[] = countries.map((location) => {
-    return technologies.map(tech => ({tech, location}))
-}).flat();
-
-
 (async () => {
     console.log('Launching Chrome...')
     const browser = await puppeteer.launch({
@@ -58,7 +52,7 @@ const countriesAndTechnologies: { tech: string; location: string }[] = countries
     getJobsFromLinkedin(browser).pipe(
         concatMap(({jobs, searchParams}) => {
             // Normally here you would save the jobs to a database, in this example just write the jobs in a json file.
-            const fileName = `linkedin_${searchParams.searchText}_${searchParams.locationText}_${searchParams.nPage}.json`
+            const fileName = `linkedin_${searchParams.searchText}_${searchParams.locationText}_${searchParams.pageNumber}.json`
             const logJobDataFile: string = path.join(rootDirectory, jobsDataFolder, fileName);
             return defer(() => fromPromise(fs.promises.writeFile(logJobDataFile, JSON.stringify(jobs, null, 2), 'utf-8'))).pipe(
                 map(() => ({jobs, searchParams}))

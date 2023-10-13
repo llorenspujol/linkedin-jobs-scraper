@@ -17,12 +17,6 @@ export function formatDate(date: Date | string | number) {
     return [year, month, day].join('-');
 }
 
-/** Remove days from the current date (This is meant to be the deterministic opposite of dateAddDays()). */
-export function dateRemoveDays(date: Date, days: number): Date {
-    const dayMilliseconds = 24 * 60 * 60 * 1000;
-    return new Date(date.getTime() - dayMilliseconds * days);
-}
-
 function describe(jsHandle) {
     return jsHandle.executionContext().evaluate(obj => {
         // serialize |obj| however you want
@@ -59,23 +53,4 @@ export function pageAddLogs(page: puppeteer.Page, pageId: string): void {
         // .on('response', response => console.log(`${pageId} response: ${response.status()} ${response.url()}`))
         // .on('request', request => console.log(`${pageId} request: ${request.url()} headers: ${JSON.stringify(request.headers())} response: ${request.response()}`))
         .on('requestfailed', request => console.log(`${pageId} requestfailed: ${request!.failure()!.errorText} ${request.url()}`))
-}
-
-
-// Remove accents diacritics. See: https://stackoverflow.com/questions/990904/remove-accents-diacritics-in-a-string-in-javascript
-export function removeAccentDiacriticsAndNonWordCharacters(s: string): string {
-    let r = s; //s.toLowerCase();
-    // r = r.replace(new RegExp('\\s', 'g'), ''); // Matches any whitespace character (spaces, tabs, line breaks).
-    r = r.replace(new RegExp('[àáâãäå]', 'g'), 'a');
-    r = r.replace(new RegExp('æ', 'g'), 'ae');
-    r = r.replace(new RegExp('ç', 'g'), 'c');
-    r = r.replace(new RegExp('[èéêë]', 'g'), 'e');
-    r = r.replace(new RegExp('[ìíîï]', 'g'), 'i');
-    r = r.replace(new RegExp('ñ', 'g'), 'n');
-    r = r.replace(new RegExp('[òóôõö]', 'g'), 'o');
-    r = r.replace(new RegExp('œ', 'g'), 'oe');
-    r = r.replace(new RegExp('[ùúûü]', 'g'), 'u');
-    r = r.replace(new RegExp('[ýÿ]', 'g'), 'y');
-    r = r.replace(new RegExp('\\W', 'g'), ''); // Matches any character that is not a word character (alphanumeric & underscore). Equivalent to [^A-Za-z0-9_]
-    return r;
 }

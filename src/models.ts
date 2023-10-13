@@ -1,9 +1,3 @@
-
-
-
-
-
-
 export type SalaryCurrency = 'USD' | 'EUR' | 'GBP' | 'RON' | 'CHF' | '';
 
 export interface JobInterface {
