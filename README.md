@@ -1,48 +1,36 @@
 # LinkedIn Jobs Scraper
 
-LinkedIn Jobs Scraper is a Node.js project that uses Puppeteer and RxJS to retrieve job listings from LinkedIn web pages.
+LinkedIn Jobs Scraper running in Node.js that uses Puppeteer and RxJS to scrape job offers from LinkedIn.
 
-> IMPORTANT: Web scraping can frequently violate the terms of service of a website. Always review and respect a website's robots.txt file and its Terms of Service. In this instance, this code should be used ONLY for teaching and hobby purposes. LinkedIn specifically prohibits any data extraction from its website; you can read more here: https://www.linkedin.com/legal/crawling-terms.
+## Highlights
+- 🔧 Parses LinkedIn job offers and returns the data in JSON format
+- 📄 Loops through all the pages for a specified search params
+- 🔁 Loops through as many search params as needed.
+- ⚡️ Uses RxJS Observables instead of Promises
+- 🛑 Handles 429 status code error
+- 🛡 Handles Linkedin Authwall
+- 💾 Saves the scraped data as JSON in an auto-generated `/data` folder
+- 📝 It is written entirely in Typescript.
 
-## Features
+### Quick start
+**Node version >= 12 and NPM >= 6**
 
-- Retrieves job listings from LinkedIn web pages.
-- Supports any list of search parameters with searchText and locationText.
-- Utilizes Puppeteer.
-- Utilizes RxJS Observables for improved composition and enhanced error handling.
-- Saves the scraped data as JSON in an auto-generated `/data` folder
+```bash
+# clone the repo.
+git clone https://github.com/your-username/linkedin-jobs-scraper.git
 
-## Installation
+# go to the repo
+cd linkedin-jobs-scraper
 
-Make sure you have [Node.js](https://nodejs.org/) and [npm](https://www.npmjs.com/) (Node Package Manager) installed on your system.
+# install the dependencies via npm
+npm install
 
-1. Clone this repository:
+# start scraping
+npm run start
+```
 
-   ```bash
-   git clone https://github.com/your-username/linkedin-jobs-scraper.git
-   ```
+### NPM scripts
 
-2. Change to the project directory:
-
-   ```bash
-   cd linkedin-jobs-scraper
-   ```
-
-3. Install project dependencies:
-
-   ```bash
-   npm install
-   ```
-
-4. Run:
-
-   ```bash
-   npm run start
-   ```
-   
-5. Run Debug (non-headless):
-
-   ```bash
-   npm run start:debug
-   ```
-
+* `npm run start` - runs with puppeteer in headless mode.
+* `npm run start:debug` - runs with puppeteer in non-headless mode.
+* `npm run clean:data` - removes the folder `/data`
