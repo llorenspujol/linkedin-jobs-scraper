@@ -1,6 +1,6 @@
 import { concat, defer, EMPTY, Observable, of, throwError } from 'rxjs';
 import { fromPromise } from 'rxjs/internal-compatibility';
-import { catchError, concatMap, map, retryWhen, switchMap, take, tap } from 'rxjs/operators';
+import { catchError, concatMap, expand, map, retryWhen, switchMap, take, tap } from 'rxjs/operators';
 import { Browser, Page } from 'puppeteer';
 import { JobInterface, SalaryCurrency } from './models';
 import { genericRetryStrategy, getPageLocationOperator, retryStrategyByCondition } from './scraper.utils';
@@ -260,19 +260,22 @@ function waitForJobSearchCard(page: Page) {
     );
 }
 
-function getJobsFromPageRecursive(page: Page, searchParams: ScraperSearchParams): Observable<ScraperResult> {
-    return goToLinkedinJobsPageAndExtractJobs(page, searchParams).pipe(
+function getJobsFromAllPages(page: Page, initSearchParams: ScraperSearchParams): Observable<ScraperResult> {
+    const getJobs$ = (searchParams: ScraperSearchParams) => goToLinkedinJobsPageAndExtractJobs(page, searchParams).pipe(
         map((jobs): ScraperResult => ({jobs, searchParams} as ScraperResult)),
         catchError(error => {
             console.error(error);
-            return of({jobs: [], searchParams})
-        }),
-        switchMap(({jobs}) => {
+            return of({jobs: [], searchParams: searchParams})
+        })
+    );
+
+    return getJobs$(initSearchParams).pipe(
+        expand(({jobs, searchParams}) => {
             console.log(`Linkedin - Query: ${searchParams.searchText}, Location: ${searchParams.locationText}, Page: ${searchParams.pageNumber}, nJobs: ${jobs.length}, url: ${urlQueryPage(searchParams)}`);
             if (jobs.length === 0) {
                 return EMPTY;
             } else {
-                return concat(of({jobs, searchParams}), getJobsFromPageRecursive(page, {...searchParams, pageNumber: searchParams.pageNumber + 1}));
+                return getJobs$({...searchParams, pageNumber: searchParams.pageNumber + 1});
             }
         })
     );
@@ -291,7 +294,7 @@ export function getJobsFromLinkedin(browser: Browser): Observable<ScraperResult>
     const scrapeJobs = (page: Page): Observable<ScraperResult> =>
         fromArray(searchParamsList).pipe(
             concatMap(({ searchText, locationText }) =>
-                getJobsFromPageRecursive(page, { searchText, locationText, pageNumber: 0 })
+                getJobsFromAllPages(page, { searchText, locationText, pageNumber: 0 })
             )
         )
 
