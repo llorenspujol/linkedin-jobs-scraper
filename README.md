@@ -1,14 +1,16 @@
 # LinkedIn Jobs Scraper
 
-LinkedIn Jobs Scraper is a Node.js project that uses Puppeteer and RxJS to retrieve job listings from LinkedIn web pages. It provides a convenient way to gather job data for analysis or monitoring job postings on LinkedIn.
+LinkedIn Jobs Scraper is a Node.js project that uses Puppeteer and RxJS to retrieve job listings from LinkedIn web pages.
 
 > IMPORTANT: Web scraping can frequently violate the terms of service of a website. Always review and respect a website's robots.txt file and its Terms of Service. In this instance, this code should be used ONLY for teaching and hobby purposes. LinkedIn specifically prohibits any data extraction from its website; you can read more here: https://www.linkedin.com/legal/crawling-terms.
 
 ## Features
 
-- Retrieve job listings from LinkedIn web pages.
-- Easily filter and extract job details, such as job title, company, location, and more.
-- Utilizes Puppeteer for headless browsing and RxJS for handling asynchronous operations efficiently.
+- Retrieves job listings from LinkedIn web pages.
+- Supports any list of search parameters with searchText and locationText.
+- Utilizes Puppeteer.
+- Utilizes RxJS Observables for improved composition and enhanced error handling.
+- Saves the scraped data as JSON in an auto-generated `/data` folder
 
 ## Installation
 
@@ -37,3 +39,10 @@ Make sure you have [Node.js](https://nodejs.org/) and [npm](https://www.npmjs.co
    ```bash
    npm run start
    ```
+   
+5. Run Debug (non-headless):
+
+   ```bash
+   npm run start:debug
+   ```
+
