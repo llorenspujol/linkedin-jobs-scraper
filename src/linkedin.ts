@@ -1,11 +1,9 @@
-import { concat, defer, EMPTY, Observable, of, throwError } from 'rxjs';
-import { fromPromise } from 'rxjs/internal-compatibility';
-import { catchError, concatMap, expand, map, retryWhen, switchMap, take, tap } from 'rxjs/operators';
-import { Browser, Page } from 'puppeteer';
+import { stacks } from './data';
+import { defer, Observable } from 'rxjs';
 import { JobInterface, SalaryCurrency } from './models';
-import { genericRetryStrategy, getPageLocationOperator, retryStrategyByCondition } from './scraper.utils';
-import { fromArray } from 'rxjs/internal/observable/fromArray';
-import { searchParamsList, stacks } from './data';
+import { fromPromise } from 'rxjs/internal-compatibility';
+import { Page, Response } from 'puppeteer';
+import { switchMap } from 'rxjs/operators';
 
 export interface ScraperSearchParams {
     searchText: string;
@@ -13,16 +11,23 @@ export interface ScraperSearchParams {
     pageNumber: number;
 }
 
-export interface ScraperResult {
-    jobs: JobInterface[];
-    searchParams: ScraperSearchParams;
+/** main function */
+export function goToLinkedinJobsPageAndExtractJobs(page: Page, searchParams: ScraperSearchParams): Observable<JobInterface[]> {
+    return defer(() => fromPromise(navigateToJobsPage(page, searchParams)))
+        .pipe(switchMap(() => getJobsFromLinkedinPage(page)));
 }
 
-const urlQueryPage = (search: ScraperSearchParams) =>
-    `https://linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${search.searchText}&start=${search.pageNumber * 25}${search.locationText ? '&location=' + search.locationText : ''}`
+/* Utility functions  */
 
+export const urlQueryPage = (searchParams: ScraperSearchParams) =>
+    `https://linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${searchParams.searchText}
+    &start=${searchParams.pageNumber * 25}${searchParams.locationText ? '&location=' + searchParams.locationText : ''}`
 
-function getJobsFromLinkedinPage(page: Page): Observable<JobInterface[]> {
+function navigateToJobsPage(page: Page, searchParams: ScraperSearchParams): Promise<Response | null> {
+    return page.goto(urlQueryPage(searchParams), { waitUntil: 'networkidle0' });
+}
+
+export function getJobsFromLinkedinPage(page: Page): Observable<JobInterface[]> {
     return defer(() => fromPromise(page.evaluate((pageEvalData) => {
         const collection: HTMLCollection = document.body.children;
         const results: JobInterface[] = [];
@@ -116,8 +121,8 @@ function getJobsFromLinkedinPage(page: Page): Observable<JobInterface[]> {
                     company: companyName,
                     location: companyLocation,
                     salaryCurrency: currency,
-                    salaryMax: salaryMax || -1,
-                    salaryMin: salaryMin || -1,
+                    salaryMax: salaryMax,
+                    salaryMin: salaryMin,
                     countryCode: '',
                     countryText: '',
                     descriptionHtml: '',
@@ -133,171 +138,4 @@ function getJobsFromLinkedinPage(page: Page): Observable<JobInterface[]> {
         }
         return results;
     }, {stacks})) as Observable<JobInterface[]>)
-}
-
-function getJobDescription(page: Page, job: Pick<JobInterface, 'url'>): Observable<Pick<JobInterface, 'url' | 'descriptionHtml'>> {
-
-    return defer(() => {
-        console.log('goto', job.url);
-        return defer(() => fromPromise(page.setExtraHTTPHeaders({'accept-language': 'en-US,en;q=0.9'})))
-            .pipe(
-                // https://pptr.dev/api/puppeteer.puppeteerlifecycleevent
-                switchMap(() => defer(() => fromPromise(page.goto(job.url, {waitUntil: 'networkidle2'}))))
-            );
-    })
-        .pipe(
-            tap((response) => {
-                const status = (response as any)?.status();
-                console.log('RESPONSE STATUS', status);
-                if (status === 429) {
-                    throw Error('Status 429 (Too many requests)');
-                }
-
-            }),
-            switchMap(() => getPageLocationOperator(page).pipe(tap((locationHref) => {
-                console.log(`LocationHref: ${locationHref}`);
-                if (locationHref.includes('linkedin.com/authwall')) {
-                    console.log('AUTHWALL')
-                    throw Error('Linkedin authwall href: ' + locationHref);
-                }
-            }))),
-            catchError(error => {
-                console.log('Error', error);
-                return throwError(error);
-            }),
-            retryWhen(genericRetryStrategy({
-                maxRetryAttempts: 4
-            })),
-            switchMap(() =>
-                defer(() => fromPromise(page.evaluate((sel) => {
-                    console.log(`location ${location.href}`);
-                    const descriptionContainerClassName = 'show-more-less-html__markup';
-                    const descriptionContainer = document.getElementsByClassName(descriptionContainerClassName)[0] as HTMLElement;
-                    // console.log('innerHtml', descriptionContainer.innerHTML);
-                    return descriptionContainer && descriptionContainer.innerHTML ? descriptionContainer.innerHTML : '';
-                })))
-            ),
-            map((descriptionHtml) => {
-                // console.log('descriptionHtml', descriptionHtml);
-                return {
-                    ...job,
-                    descriptionHtml
-                }
-            }),
-            catchError((error) => {
-                console.log('Linkedin getJobDescription Error', error);
-                return of({...job, descriptionHtml: ''});
-            })
-        );
-
-
-}
-
-
-const cookies = [
-    {
-        'name': 'lang',
-        'value': 'v=2&lang=en-us'
-    }
-];
-
-const AUTHWALL_PATH = 'linkedin.com/authwall';
-const STATUS_TOO_MANY_REQUESTS = 429;
-const JOB_SEARCH_SELECTOR = '.job-search-card';
-
-function goToLinkedinJobsPageAndExtractJobs(page: Page, searchParams: ScraperSearchParams): Observable<JobInterface[]> {
-    return defer(() => fromPromise(page.setExtraHTTPHeaders({'accept-language': 'en-US,en;q=0.9'})))
-        .pipe(
-            switchMap(() => navigateToLinkedinJobsPage(page, searchParams)),
-            tap(response => checkResponseStatus(response)),
-            switchMap(() => throwErrorIfAuthwall(page)),
-            switchMap(() => waitForJobSearchCard(page)),
-            switchMap(() => getJobsFromLinkedinPage(page)),
-            retryWhen(retryStrategyByCondition({
-                maxRetryAttempts: 4,
-                retryConditionFn: error => error.retry === true
-            })),
-            map(jobs =>  Array.isArray(jobs) ? jobs : []),
-            take(1)
-        );
-}
-
-/**
- * Navigate to the LinkedIn search page, using the provided search parameters.
- */
-function navigateToLinkedinJobsPage(page: Page, searchParams: ScraperSearchParams) {
-    return defer(() => fromPromise(page.goto(urlQueryPage(searchParams), {waitUntil: 'networkidle0'})));
-}
-
-/**
- * Check the HTTP response status and throw an error if too many requests have been made.
- */
-function checkResponseStatus(response: any) {
-    const status = response?.status();
-    if (status === STATUS_TOO_MANY_REQUESTS) {
-        throw {message: 'Status 429 (Too many requests)', retry: true, status: STATUS_TOO_MANY_REQUESTS};
-    }
-}
-
-/**
- * Check if the current page is an authwall and throw an error if it is.
- */
-function throwErrorIfAuthwall(page: Page) {
-    return getPageLocationOperator(page).pipe(tap(locationHref => {
-        if (locationHref.includes(AUTHWALL_PATH)) {
-            console.error('Authwall error');
-            throw {message: `Linkedin authwall! locationHref: ${locationHref}`, retry: true};
-        }
-    }));
-}
-
-/**
- * Wait for the job search card to be visible on the page, and handle timeouts or authwalls.
- */
-function waitForJobSearchCard(page: Page) {
-    return defer(() => fromPromise(page.waitForSelector(JOB_SEARCH_SELECTOR, {visible: true, timeout: 5000}))).pipe(
-        catchError(error => throwErrorIfAuthwall(page).pipe(tap(() => {throw error})))
-    );
-}
-
-function getJobsFromAllPages(page: Page, initSearchParams: ScraperSearchParams): Observable<ScraperResult> {
-    const getJobs$ = (searchParams: ScraperSearchParams) => goToLinkedinJobsPageAndExtractJobs(page, searchParams).pipe(
-        map((jobs): ScraperResult => ({jobs, searchParams} as ScraperResult)),
-        catchError(error => {
-            console.error(error);
-            return of({jobs: [], searchParams: searchParams})
-        })
-    );
-
-    return getJobs$(initSearchParams).pipe(
-        expand(({jobs, searchParams}) => {
-            console.log(`Linkedin - Query: ${searchParams.searchText}, Location: ${searchParams.locationText}, Page: ${searchParams.pageNumber}, nJobs: ${jobs.length}, url: ${urlQueryPage(searchParams)}`);
-            if (jobs.length === 0) {
-                return EMPTY;
-            } else {
-                return getJobs$({...searchParams, pageNumber: searchParams.pageNumber + 1});
-            }
-        })
-    );
-}
-
-/**
- * Creates a new page and scrapes LinkedIn job data for each pair of searchText and locationText, recursively retrieving data until there are no more pages.
- * @param browser A Puppeteer instance
- * @returns An Observable that emits scraped job data as ScraperResult
- */
-export function getJobsFromLinkedin(browser: Browser): Observable<ScraperResult> {
-    // Create a new page
-    const createPage = defer(() => fromPromise(browser.newPage()));
-
-    // Iterate through search parameters and scrape jobs
-    const scrapeJobs = (page: Page): Observable<ScraperResult> =>
-        fromArray(searchParamsList).pipe(
-            concatMap(({ searchText, locationText }) =>
-                getJobsFromAllPages(page, { searchText, locationText, pageNumber: 0 })
-            )
-        )
-
-    // Compose sequentially previous steps
-    return createPage.pipe(switchMap(page => scrapeJobs(page)));
 }
