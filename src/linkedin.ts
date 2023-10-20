@@ -1,9 +1,10 @@
-import { stacks } from './data';
+import { searchParamsList, stacks } from './data';
 import { defer, EMPTY, Observable, of } from 'rxjs';
 import { JobInterface, SalaryCurrency } from './models';
 import { fromPromise } from 'rxjs/internal-compatibility';
-import { Page, Response } from 'puppeteer';
-import { catchError, expand, map, switchMap } from 'rxjs/operators';
+import { Browser, Page, Response } from 'puppeteer';
+import { catchError, concatMap, expand, map, switchMap } from 'rxjs/operators';
+import { fromArray } from 'rxjs/internal/observable/fromArray';
 
 export interface ScraperSearchParams {
     searchText: string;
@@ -16,6 +17,26 @@ export interface ScraperResult {
     searchParams: ScraperSearchParams;
 }
 
+/**
+ * Creates a new page and scrapes LinkedIn job data for each pair of searchText and locationText, recursively retrieving data until there are no more pages.
+ * @param browser A Puppeteer instance
+ * @returns An Observable that emits scraped job data as ScraperResult
+ */
+export function getJobsFromLinkedin(browser: Browser): Observable<ScraperResult> {
+    // Create a new page
+    const createPage = defer(() => fromPromise(browser.newPage()));
+
+    // Iterate through search parameters and scrape jobs
+    const scrapeJobs = (page: Page): Observable<ScraperResult> =>
+        fromArray(searchParamsList).pipe(
+            concatMap(({ searchText, locationText }) =>
+                getJobsFromAllPages(page, { searchText, locationText, pageNumber: 0 })
+            )
+        )
+
+    // Compose sequentially previous steps
+    return createPage.pipe(switchMap(page => scrapeJobs(page)));
+}
 
 export function getJobsFromAllPages(page: Page, initSearchParams: ScraperSearchParams): Observable<ScraperResult> {
     const getJobs$ = (searchParams: ScraperSearchParams) => goToLinkedinJobsPageAndExtractJobs(page, searchParams).pipe(
