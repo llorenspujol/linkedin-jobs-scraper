@@ -7,7 +7,6 @@ import { formatDate } from './utils';
 import yargs from 'yargs';
 import { getJobsFromLinkedin } from './linkedin';
 import { fromPromise } from 'rxjs/internal-compatibility';
-import { countries, technologies } from './data';
 
 
 const argv = yargs(process.argv)

@@ -2,7 +2,7 @@
     "compilerOptions": {
         "module": "commonjs",
         "moduleResolution": "node",
-        "outDir": "./dit/",
+        "outDir": "./dist/",
         "target": "es5",
         "sourceMap": true,
         "strictNullChecks": true,
