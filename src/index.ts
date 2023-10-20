@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as puppeteer from 'puppeteer';
 import { formatDate } from './utils';
 import yargs from 'yargs';
-import { goToLinkedinJobsPageAndExtractJobs } from './linkedin';
+import { getJobsFromAllPages, goToLinkedinJobsPageAndExtractJobs } from './linkedin';
 
 
 const argv = yargs(process.argv)
@@ -47,10 +47,10 @@ fs.mkdirSync(path.join(rootDirectory, jobsDataFolder), {recursive: true});
     const page = await browser.newPage()
 
 
-    goToLinkedinJobsPageAndExtractJobs(page, {
+    getJobsFromAllPages(page, {
         searchText: 'vue',
         locationText: '',
-        pageNumber: 1
+        pageNumber: 0
     }).subscribe((jobs) => {
         console.log('jobs', jobs)
     }, (error) => {

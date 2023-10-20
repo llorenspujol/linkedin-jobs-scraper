@@ -1,14 +1,41 @@
 import { stacks } from './data';
-import { defer, Observable } from 'rxjs';
+import { defer, EMPTY, Observable, of } from 'rxjs';
 import { JobInterface, SalaryCurrency } from './models';
 import { fromPromise } from 'rxjs/internal-compatibility';
 import { Page, Response } from 'puppeteer';
-import { switchMap } from 'rxjs/operators';
+import { catchError, expand, map, switchMap } from 'rxjs/operators';
 
 export interface ScraperSearchParams {
     searchText: string;
     locationText: string;
     pageNumber: number;
+}
+
+export interface ScraperResult {
+    jobs: JobInterface[];
+    searchParams: ScraperSearchParams;
+}
+
+
+export function getJobsFromAllPages(page: Page, initSearchParams: ScraperSearchParams): Observable<ScraperResult> {
+    const getJobs$ = (searchParams: ScraperSearchParams) => goToLinkedinJobsPageAndExtractJobs(page, searchParams).pipe(
+        map((jobs): ScraperResult => ({jobs, searchParams} as ScraperResult)),
+        catchError(error => {
+            console.error(error);
+            return of({jobs: [], searchParams: searchParams})
+        })
+    );
+
+    return getJobs$(initSearchParams).pipe(
+        expand(({jobs, searchParams}) => {
+            console.log(`Linkedin - Query: ${searchParams.searchText}, Location: ${searchParams.locationText}, Page: ${searchParams.pageNumber}, nJobs: ${jobs.length}, url: ${urlQueryPage(searchParams)}`);
+            if (jobs.length === 0) {
+                return EMPTY;
+            } else {
+                return getJobs$({...searchParams, pageNumber: searchParams.pageNumber + 1});
+            }
+        })
+    );
 }
 
 /** main function */
