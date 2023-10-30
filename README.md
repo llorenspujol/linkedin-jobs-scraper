@@ -2,6 +2,8 @@
 
 LinkedIn Jobs Scraper running in Node.js that uses Puppeteer and RxJS to scrape job offers from LinkedIn.
 
+![Example video scraping linkedin job offers](/assets/video-showcase.gif)
+
 > IMPORTANT: Web scraping can frequently violate the terms of service of a website. Always review and respect a website's robots.txt file and its Terms of Service. In this instance, this code should be used ONLY for teaching and hobby purposes. LinkedIn specifically prohibits any data extraction from its website; you can read more here: https://www.linkedin.com/legal/crawling-terms.
 
 ## Highlights
