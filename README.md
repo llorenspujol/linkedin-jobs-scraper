@@ -16,6 +16,9 @@ LinkedIn Jobs Scraper running in Node.js that uses Puppeteer and RxJS to scrape 
 - 💾 Saves the scraped data as JSON in an auto-generated `/data` folder
 - 📝 It is written entirely in Typescript.
 
+## How this code works
+I wrote a blog explaining the code written in this repo with all the steps involved. You can find it [here](https://gironajs.com/en/blog/web-scraping-linkedin-jobs-using-puppeteer-and-rxjs)
+
 ### Quick start
 **Node version >= 12 and NPM >= 6**
 
@@ -38,3 +41,5 @@ npm run start
 * `npm run start` - runs with puppeteer in headless mode.
 * `npm run start:debug` - runs with puppeteer in non-headless mode.
 * `npm run clean:data` - removes the folder `/data`
+
+
